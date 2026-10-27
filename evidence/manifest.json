@@ -1,0 +1,59 @@
+{
+  "baseline": "9dc0c263d2aefeb151d565166b6b950e2ac9f6a5",
+  "denominator_scope": "Recorded 10 fixture cases + 13 explicitly injected failure cases, not total solver calls inside pytest",
+  "denominator_statuses": {
+    "INTERNAL_ERROR": 1,
+    "INVALID_INPUT": 1,
+    "LP_UNCERTIFIED": 8,
+    "PHYSICAL_INVALID": 1,
+    "PHYSICAL_VALID": 4,
+    "REPLAY_MISMATCH": 1,
+    "SOLVER_TIMEOUT": 1,
+    "UNSUPPORTED_CONSTRAINT": 6
+  },
+  "dependencies": {
+    "accelsched": "1.0.0",
+    "numpy": "2.4.6",
+    "pytest": "9.0.3",
+    "scipy": "1.18.0",
+    "setuptools": "83.0.0"
+  },
+  "engineer_commit": "1070a75a6e37ab8eac6aaf0ff4402c5a5cb30dd1",
+  "files": {
+    "evidence/acceptance.json": "48e658a314eca9c15c980e95f659c609718f0fe0261dd6f43a977b13e9a26fd6",
+    "evidence/collection.txt": "d0a0f68ff5769b6ee648a9d70f9f6f4b970379925eeedc982468d2dc3f3c6877",
+    "evidence/dual-witnesses.json": "4d756dc6bc1ca6e9b13b9f9ee582dcad4724cb17783f9c2ade812258b6ab8eff",
+    "evidence/failures.json": "a44279dd119293b66fae93d912c7b878a2be1fadf71b2cef0f8cee9be9374089",
+    "evidence/fixture-runs.json": "76c6ce5a39fd4d686ad05320f8ea2811e5de5d5464ee50771e27fe270ab0ff12",
+    "evidence/manual-replay.json": "c03ef8c303d28ac799d97adee2cfbc77dfb1e767c03edcc273b30d723a4d8ddd",
+    "evidence/oracle-faults.json": "9805add309c901c5a85ca126851d61c3c8b542171cfadcbd47b4e32c4f376c4e",
+    "evidence/pytest.txt": "783dcbf4544a6da0a53443951a722135309094a02de882379447814287cdb7c4",
+    "fixtures/01_gpu_family.json": "b006e49a728f93d9ec80c850e8b4b011c57b14c17ecaada67d2d4b81e5c81a1f",
+    "fixtures/02_fragmentation.json": "9ac1a7ea572cc5ef2fecba3604659e6e7ae2795bf71cd5bd39321a0eb89c59bb",
+    "fixtures/03_prediction_shift.json": "8fb49ed12295c04a91ef209a58b5aa28d5c034b8afab5d0ab27bf36f289128dc",
+    "fixtures/04_dual_degeneracy.json": "fab9754cebc2a55eab910abcda6080b2bb3f41d7860233d924de7627ec1a89bc",
+    "fixtures/05_unsupported.json": "49b0d5afb18254373d2f0d8123919e693f5fe8292fead4f43d1b6fef2b3d1822",
+    "pyproject.toml": "e74cbc33d258a9c6baa7e2bc18685d0eab495f0bbd2fab0931f62a6a2dba168b",
+    "src/accelsched_kai/__init__.py": "f625af74738d95fee7808ad2791fba43a59da43d6813142cad706a045e271295",
+    "src/accelsched_kai/adapter.py": "ebb75fcdf479f87d03711d228c2b0149e7972ad5d3eec22a1c051bf79615296a",
+    "src/accelsched_kai/advisor.py": "16925d20b6a458ef7cb1416ebc48edf662cfc5a3f95128e57353a4ed6714ee4b",
+    "src/accelsched_kai/oracle.py": "6778b3cdc8d6d46667111b06ad0f82d5d82c4150493d28577fa3fd349d4be820",
+    "src/accelsched_kai/schema.py": "6ffbe49253ab62ad518c4170523b7bed491eab69112b3ecc89138990bbf0fd09",
+    "tests/test_poc.py": "34ea6a7c2e0f7006ecdc60ea305bd1de262e7af7ac8721a0ebb87e7ec5c40dc0"
+  },
+  "fixture_cases": 10,
+  "hash_convention": "Raw LF bytes of tracked files; canonical JSON input/output hashes separately labeled",
+  "injected_failure_runs": 13,
+  "mode": "PROBE_ONLY_CPU_OFFLINE",
+  "native_highs_version": "1.12.0",
+  "native_lp_fixture_runs": 4,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.14.6 | packaged by Anaconda, Inc. | (main, Jul  9 2026, 14:29:05) [MSC v.1942 64 bit (AMD64)]",
+  "source_hashes": {
+    "certified_pgfp": "802b7d46084fc1c5324e1c7f44fec93a343356106c99eceb1c50063a10b57ede",
+    "lp_backends": "f24cf7ec22e936e7668d7b4d245d0fab080234cf3975075ed9b3247abbf18d3f",
+    "lp_certify": "2f0819b9f54b110679efd263bfdf457d338804e1c50254f19f490e103058992e",
+    "lp_contract": "d694498a93dd63243104dda26f6eb5348d1ebcce9ced405cfb5542c403b510a3",
+    "m0_oracle": "7243f96a0edc6fa3d439cd3cc6ae483d88255c25b7a9c6a81c515a77e90ed7d2"
+  }
+}
