@@ -181,7 +181,7 @@ func TestNativeSessionDifferential(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	proof := map[string]any{"claim": "STATEMENT_STATE_INVARIANT (tested prepared-Pending path only)", "FULL_SCHEDULER_DECISION_INVARIANT": "NOT_VERIFIED: node0 is specified, no action/scoring decision tested", "normalization": "documented public task/job/node/resource projection, not entire Go object memory; no wall-clock timestamps, pointer identity or private lazy caches compared; accepted bookkeeping explicitly included", "vector_units": "CPU millicores, memory bytes, GPU count, pod count", "fixture_imports": "official jobs_fake/tasks_fake/nodes_fake; no local substitutes", "precondition": "Pending task after a prior native Allocate/Rollback, with native accepted bookkeeping established; cold preparation retained below"}
+	proof := map[string]any{"claim": "STATEMENT_STATE_INVARIANT (tested cold and prepared-Pending OFF/ON paths); exact rollback restoration only on prepared-Pending", "FULL_SCHEDULER_DECISION_INVARIANT": "NOT_VERIFIED: node0 is specified, no action/scoring decision tested", "normalization": "documented public task/job/node/resource projection, not entire Go object memory; no wall-clock timestamps, pointer identity or private lazy caches compared; accepted bookkeeping explicitly included", "vector_units": "CPU millicores, memory bytes, GPU count, pod count", "fixture_imports": "official jobs_fake/tasks_fake/nodes_fake; no local substitutes", "precondition": "Primary exact-restoration pair: Pending task after a prior native Allocate/Rollback; additional fresh cold OFF/ON pair below has no preparation"}
 	defer func() { proof["test_failed"] = t.Failed(); nativeSave(t, dir, "differential-proof.json", proof) }()
 	off, on := nativeFixtureNew(t), nativeFixtureNew(t)
 	if off.session == on.session || off.session.ClusterInfo == on.session.ClusterInfo || off.task == on.task || off.task.Pod == on.task.Pod || off.job == on.job || off.task.VectorMap == on.task.VectorMap || off.session.ClusterInfo.Nodes["node0"] == on.session.ClusterInfo.Nodes["node0"] || off.session.ClusterInfo.Nodes["node1"] == on.session.ClusterInfo.Nodes["node1"] || &off.task.ResReqVector[0] == &on.task.ResReqVector[0] || &off.job.AllocatedVector[0] == &on.job.AllocatedVector[0] || &off.session.ClusterInfo.Nodes["node0"].IdleVector[0] == &on.session.ClusterInfo.Nodes["node0"].IdleVector[0] {
@@ -295,7 +295,39 @@ func TestNativeSessionDifferential(t *testing.T) {
 		if p.Status != "Allocated" || p.Node != "node0" || !p.Virtual {
 			t.Fatal("not a native virtual allocation", p)
 		}
-		t.Log("STATEMENT_STATE_INVARIANT: exact prepared-Pending before/during/after parity; FULL_SCHEDULER_DECISION_INVARIANT NOT VERIFIED")
+		// Also compare a fresh COLD OFF/ON pair, so the accepted-cache finding is
+		// not used to avoid testing initial native allocation with the observer.
+		coldOff, coldOn := nativeFixtureNew(t), nativeFixtureNew(t)
+		coldBaseline := nativeExercise(t, coldOff)
+		nativeSuccess(t, coldBaseline)
+		coldPlugin := newShadowPlugin(nil).(*shadowPlugin)
+		coldPlugin.OnSessionOpen(coldOn.session)
+		defer coldPlugin.OnSessionClose(coldOn.session)
+		coldCapture := coldPlugin.sessionCapture(coldOn.session)
+		coldObserved := nativeExercise(t, coldOn)
+		nativeSuccess(t, coldObserved)
+		coldPlugin.OnSessionClose(coldOn.session)
+		proof["cold_observed_off"], proof["cold_observed_on"] = coldBaseline, coldObserved
+		if !reflect.DeepEqual(coldBaseline, coldObserved) {
+			t.Fatal("cold native OFF/ON source-state difference")
+		}
+		if coldBaseline.RawRestored || coldObserved.RawRestored {
+			t.Fatal("expected pinned native cold accepted-bookkeeping latch changed")
+		}
+		coldAudit, err := coldCapture.Snapshot()
+		if err != nil || !coldAudit.Complete || len(coldAudit.Events) != 2 {
+			t.Fatal("cold native capture incomplete", err)
+		}
+		coldTrace, err := coldCapture.MarshalTrace()
+		if err != nil || !bytes.Equal(coldTrace, trace) {
+			t.Fatal("cold callback trace differs from the trace submitted to frozen CLI", err)
+		}
+		nativeSave(t, dir, "cold-native-capture-audit.json", coldAudit)
+		if err = os.WriteFile(filepath.Join(dir, "cold-native-generated-trace.json"), coldTrace, 0600); err != nil {
+			t.Fatal(err)
+		}
+		proof["cold_observed_trace_matches_prepared"] = true
+		t.Log("STATEMENT_STATE_INVARIANT: cold/prepared OFF/ON parity; exact rollback restoration only prepared-Pending; FULL_SCHEDULER_DECISION_INVARIANT NOT VERIFIED")
 	})
 	t.Run("G5_lifecycle", func(t *testing.T) {
 		if plugin.sessionCapture(on.session) != nil {
