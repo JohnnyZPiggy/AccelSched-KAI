@@ -326,17 +326,25 @@ func TestNativeReclaimActionDifferential(t *testing.T) {
 				t.Fatal("closed capture retained")
 			}
 			audit, err := c.Snapshot()
-			if err != nil || !audit.Complete {
+			if err != nil || !audit.Closed || !audit.Complete || audit.SessionError || audit.Invalid != 0 || audit.Dropped != 0 || audit.Contended != 0 || audit.LifecycleErrors != 0 {
 				t.Fatal("capture incomplete", err)
 			}
 			nativeSave(t, d, "capture-audit.json", audit)
 			if len(audit.Events) == 0 {
 				t.Log("observer blind spot: no genuine supported callback; normal trace export/offline CLI NOT_RUN")
+				t.Fatal("official single-victim fixture requires exactly two genuine native virtual callbacks")
 			} else {
+				// Compare the exact multiset: no unproven callback order assumption.
+				got := map[[3]string]int{}
 				for _, e := range audit.Events {
-					if (e.Kind != "ALLOCATE_OBSERVED" && e.Kind != "DEALLOCATE_OBSERVED") || (e.Task != "running_job0-0" && e.Task != "pending_job0-0") || e.Node != "node0" {
-						t.Fatal("unexpected native callback", e)
-					}
+					got[[3]string{e.Kind, e.Task, e.Node}]++
+				}
+				want := map[[3]string]int{
+					{"DEALLOCATE_OBSERVED", "running_job0-0", "node0"}: 1,
+					{"ALLOCATE_OBSERVED", "pending_job0-0", "node0"}:   1,
+				}
+				if len(audit.Events) != 2 || audit.Received != 2 || audit.NextSeq != 2 || !reflect.DeepEqual(got, want) {
+					t.Fatalf("expected exactly one native callback of each fixture-specific kind/task/node; audit=%+v", audit)
 				}
 				trace, err := c.MarshalTrace()
 				if err != nil {
