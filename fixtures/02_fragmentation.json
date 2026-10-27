@@ -1,0 +1,103 @@
+{
+  "schema_version": "0.1",
+  "units": [
+    "whole GPUs",
+    "integer CPU cores",
+    "integer RAM GiB"
+  ],
+  "nodes": [
+    {
+      "id": "N0",
+      "gpu_family": "A",
+      "shape": "S",
+      "capacity": [
+        4,
+        8,
+        8
+      ]
+    },
+    {
+      "id": "N1",
+      "gpu_family": "B",
+      "shape": "S",
+      "capacity": [
+        4,
+        8,
+        8
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T0",
+      "demand": [
+        1,
+        2,
+        2
+      ],
+      "value": 1,
+      "gpu_family": null,
+      "eligible": [
+        "N0",
+        "N1"
+      ]
+    }
+  ],
+  "future": [
+    {
+      "id": "A",
+      "demand": [
+        2,
+        7,
+        2
+      ],
+      "weight": 3,
+      "gpu_family": null,
+      "eligible": [
+        "N0"
+      ]
+    },
+    {
+      "id": "B",
+      "demand": [
+        4,
+        2,
+        8
+      ],
+      "weight": 1,
+      "gpu_family": null,
+      "eligible": [
+        "N1"
+      ]
+    }
+  ],
+  "realized_future": [
+    {
+      "id": "A",
+      "demand": [
+        2,
+        7,
+        2
+      ],
+      "value": 3,
+      "gpu_family": null,
+      "eligible": [
+        "N0"
+      ]
+    },
+    {
+      "id": "B",
+      "demand": [
+        4,
+        2,
+        8
+      ],
+      "value": 1,
+      "gpu_family": null,
+      "eligible": [
+        "N1"
+      ]
+    }
+  ],
+  "constraints": {}
+}
