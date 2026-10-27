@@ -129,6 +129,7 @@ def test_f04_two_valid_duals_not_a_placement_claim():
 def test_f05_unsupported(case):
     out = advisor.advise(case["snapshot"])
     assert out["status"] == "UNSUPPORTED_CONSTRAINT"
+    assert out["input_sha256"] == schema.digest(case["snapshot"])
     assert "advice" not in out and "policy_audits" not in out and "lp" not in out
 
 

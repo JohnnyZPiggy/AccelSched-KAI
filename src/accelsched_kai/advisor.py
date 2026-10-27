@@ -1,6 +1,7 @@
 """Certified fixed-price reference replay, baselines, evidence and a CPU-only CLI."""
 import argparse
 from dataclasses import asdict
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -114,8 +115,11 @@ def baseline(snapshot, lp, policy):
 def advise(snapshot, *, time_limit=5.0):
     report = {"baseline_sha": BASELINE, "mode": "PROBE_ONLY_CPU_OFFLINE", "status": "INTERNAL_ERROR"}
     try:
+        try:
+            report["input_sha256"] = digest(snapshot)
+        except (TypeError, ValueError):
+            pass  # Non-JSON Python values still go through strict validation.
         validate(snapshot)
-        report["input_sha256"] = digest(snapshot)
         if type(time_limit) not in (int, float) or not math.isfinite(time_limit) or not 0 < time_limit <= 10:
             raise InputError("time_limit must be finite, positive and <= 10 seconds")
         a, mapping = instance(snapshot); modules = frozen()
@@ -180,12 +184,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("snapshot", type=Path)
     args = parser.parse_args()
+    raw = None
     try:
         raw = args.snapshot.read_bytes()
         snapshot = loads(raw)
         out = advise(snapshot)
     except (InputError, OSError) as exc:
         out = {"status": getattr(exc, "status", "INVALID_INPUT"), "error": str(exc)}
+    if raw is not None:
+        out["input_file_sha256"] = hashlib.sha256(raw).hexdigest()
+    out.pop("output_sha256", None)
+    out["output_sha256"] = digest(out)
     sys.stdout.buffer.write(encoded(out) + b"\n")
     return 0 if out["status"] == "PHYSICAL_VALID" else 1
 
