@@ -411,6 +411,6 @@ func TestNativeSessionDifferential(t *testing.T) {
 			t.Fatal("offline CLI changed test snapshot", err)
 		}
 		proof["offline_cli_exit"] = 0
-		proof["snapshot_relation"] = "TEST_ONLY CPU0/8cores/8GiB nodes and CPU0/2cores/1GiB task; UID/node IDs match official native builders; future/value/shape/family are declared test metadata; no real forecast/eligibility integration claim"
+		proof["snapshot_relation"] = "TEST_ONLY 0GPU/8cores/8GiB nodes and 0GPU/2cores/1GiB task; UID/node IDs match official native builders; future/value/shape/family are declared test metadata; no real forecast/eligibility integration claim"
 	})
 }
