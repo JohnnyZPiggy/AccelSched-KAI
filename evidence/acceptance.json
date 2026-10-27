@@ -1,0 +1,249 @@
+{
+  "build_failure_history": [
+    {
+      "log": "install.txt",
+      "text": "Processing .\\.\n  Preparing metadata (pyproject.toml): started\n  Preparing metadata (pyproject.toml): finished with status 'done'\nBuilding wheels for collected packages: accelsched-kai\n  Building wheel for accelsched-kai (pyproject.toml): started\n  Building wheel for accelsched-kai (pyproject.toml): finished with status 'error'\n  error: subprocess-exited-with-error\n  \n  Building wheel for accelsched-kai (pyproject.toml) did not run successfully.\n  exit code: 1\n  \n  [38 lines of output]\n  running bdist_wheel\n  running build\n  running build_py\n  creating build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\adapter.py -> build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\advisor.py -> build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\oracle.py -> build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\schema.py -> build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\__init__.py -> build\\lib\\accelsched_kai\n  running egg_info\n  creating src\\accelsched_kai.egg-info\n  writing src\\accelsched_kai.egg-info\\PKG-INFO\n  writing dependency_links to src\\accelsched_kai.egg-info\\dependency_links.txt\n  writing entry points to src\\accelsched_kai.egg-info\\entry_points.txt\n  writing requirements to src\\accelsched_kai.egg-info\\requires.txt\n  writing top-level names to src\\accelsched_kai.egg-info\\top_level.txt\n  writing manifest file 'src\\accelsched_kai.egg-info\\SOURCES.txt'\n  reading manifest file 'src\\accelsched_kai.egg-info\\SOURCES.txt'\n  adding license file 'LICENSE'\n  writing manifest file 'src\\accelsched_kai.egg-info\\SOURCES.txt'\n  warning: build_py: byte-compiling is disabled, skipping.\n  \n  installing to build\\bdist.win-amd64\\wheel\n  running install\n  running install_lib\n  creating build\\bdist.win-amd64\\wheel\n  creating build\\bdist.win-amd64\\wheel\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\adapter.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\advisor.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\oracle.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\schema.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\__init__.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  warning: install_lib: byte-compiling is disabled, skipping.\n  \n  running install_egg_info\n  Copying src\\accelsched_kai.egg-info to build\\bdist.win-amd64\\wheel\\.\\accelsched_kai-0.1.0-py3.14.egg-info\n  running install_scripts\n  error: [WinError 32] \\u53e6\\u4e00\\u4e2a\\u7a0b\\u5e8f\\u6b63\\u5728\\u4f7f\\u7528\\u6b64\\u6587\\u4ef6\\uff0c\\u8fdb\\u7a0b\\u65e0\\u6cd5\\u8bbf\\u95ee\\u3002: 'build\\\\bdist.win-amd64\\\\wheel\\\\.\\\\accelsched_kai-0.1.0-py3.14.egg-info'\n  [end of output]\n  \n  note: This error originates from a subprocess, and is likely not a problem with pip.\n  ERROR: Failed building wheel for accelsched-kai\nFailed to build accelsched-kai\nerror: failed-wheel-build-for-install\n\nFailed to build installable wheels for some pyproject.toml based projects\n\naccelsched-kai\n"
+    },
+    {
+      "log": "install-export.txt",
+      "text": "Processing .\\tmp\\install-source\n  Preparing metadata (pyproject.toml): started\n  Preparing metadata (pyproject.toml): finished with status 'done'\nBuilding wheels for collected packages: accelsched-kai\n  Building wheel for accelsched-kai (pyproject.toml): started\n  Building wheel for accelsched-kai (pyproject.toml): finished with status 'done'\n  Created wheel for accelsched-kai: filename=accelsched_kai-0.1.0-py3-none-any.whl size=10960 sha256=3febee2081d5b7f9c4563aa855b632144659f38233fc3a54f5bccf6ff50f8740\n  Stored in directory: d:\\dropbox\\study\\ms-phd\\phd-epfl\\doctoral proposal\\epfl\\small interesting research\\accelsched-kai-work\\tmp\\pip\\wheels\\6a\\82\\ae\\707cbdeffa7484342a4ed7d2cc075b28e13972a6607539c7a1\nERROR: Could not install packages due to an OSError: [WinError 32] \\u53e6\\u4e00\\u4e2a\\u7a0b\\u5e8f\\u6b63\\u5728\\u4f7f\\u7528\\u6b64\\u6587\\u4ef6\\uff0c\\u8fdb\\u7a0b\\u65e0\\u6cd5\\u8bbf\\u95ee\\u3002: 'd:\\\\dropbox\\\\study\\\\ms-phd\\\\phd-epfl\\\\doctoral proposal\\\\epfl\\\\small interesting research\\\\accelsched-kai-work\\\\tmp\\\\pip\\\\wheels\\\\6a\\\\82\\\\ae\\\\707cbdeffa7484342a4ed7d2cc075b28e13972a6607539c7a1\\\\tmpbjh5ndtp'\nCheck the permissions.\n\n"
+    },
+    {
+      "log": "build-final.txt",
+      "text": "Processing .\\tmp\\install-source-final\n  Preparing metadata (pyproject.toml): started\n  Preparing metadata (pyproject.toml): finished with status 'done'\nBuilding wheels for collected packages: accelsched-kai\n  Building wheel for accelsched-kai (pyproject.toml): started\n  Building wheel for accelsched-kai (pyproject.toml): finished with status 'error'\n  error: subprocess-exited-with-error\n  \n  Building wheel for accelsched-kai (pyproject.toml) did not run successfully.\n  exit code: 1\n  \n  [38 lines of output]\n  running bdist_wheel\n  running build\n  running build_py\n  creating build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\adapter.py -> build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\advisor.py -> build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\oracle.py -> build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\schema.py -> build\\lib\\accelsched_kai\n  copying src\\accelsched_kai\\__init__.py -> build\\lib\\accelsched_kai\n  running egg_info\n  creating src\\accelsched_kai.egg-info\n  writing src\\accelsched_kai.egg-info\\PKG-INFO\n  writing dependency_links to src\\accelsched_kai.egg-info\\dependency_links.txt\n  writing entry points to src\\accelsched_kai.egg-info\\entry_points.txt\n  writing requirements to src\\accelsched_kai.egg-info\\requires.txt\n  writing top-level names to src\\accelsched_kai.egg-info\\top_level.txt\n  writing manifest file 'src\\accelsched_kai.egg-info\\SOURCES.txt'\n  reading manifest file 'src\\accelsched_kai.egg-info\\SOURCES.txt'\n  adding license file 'LICENSE'\n  writing manifest file 'src\\accelsched_kai.egg-info\\SOURCES.txt'\n  warning: build_py: byte-compiling is disabled, skipping.\n  \n  installing to build\\bdist.win-amd64\\wheel\n  running install\n  running install_lib\n  creating build\\bdist.win-amd64\\wheel\n  creating build\\bdist.win-amd64\\wheel\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\adapter.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\advisor.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\oracle.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\schema.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  copying build\\lib\\accelsched_kai\\__init__.py -> build\\bdist.win-amd64\\wheel\\.\\accelsched_kai\n  warning: install_lib: byte-compiling is disabled, skipping.\n  \n  running install_egg_info\n  Copying src\\accelsched_kai.egg-info to build\\bdist.win-amd64\\wheel\\.\\accelsched_kai-0.1.0-py3.14.egg-info\n  running install_scripts\n  error: [WinError 32] \\u53e6\\u4e00\\u4e2a\\u7a0b\\u5e8f\\u6b63\\u5728\\u4f7f\\u7528\\u6b64\\u6587\\u4ef6\\uff0c\\u8fdb\\u7a0b\\u65e0\\u6cd5\\u8bbf\\u95ee\\u3002: 'build\\\\bdist.win-amd64\\\\wheel\\\\.\\\\accelsched_kai-0.1.0-py3.14.egg-info'\n  [end of output]\n  \n  note: This error originates from a subprocess, and is likely not a problem with pip.\n  ERROR: Failed building wheel for accelsched-kai\nFailed to build accelsched-kai\nERROR: Failed to build one or more wheels\n"
+    }
+  ],
+  "checks": {
+    "all_five_package_files_exact_source_installed_wheel": true
+  },
+  "commands": [
+    {
+      "advice": {
+        "first_fit": [
+          0
+        ],
+        "lp_best_fit": [
+          0
+        ],
+        "true_pgfp": [
+          1
+        ]
+      },
+      "argv": [
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Scripts\\python.exe",
+        "-I",
+        "-B",
+        "-m",
+        "accelsched_kai.advisor",
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI\\fixtures\\01_gpu_family.json"
+      ],
+      "cwd": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work",
+      "exit_code": 0,
+      "output_sha256": "4af7b9cded9f1f4de488dc59e988888f67130e6e80c5cbf3867e0f47e9580a0b",
+      "status": "PHYSICAL_VALID",
+      "stdout_sha256": "44eacc15fca791ec49e26be57812273facfb3b3b3b7b96a5cdf4b65c91a18e0a",
+      "trace_equal_source": true
+    },
+    {
+      "advice": {
+        "first_fit": [
+          0
+        ],
+        "lp_best_fit": [
+          0
+        ],
+        "true_pgfp": [
+          1
+        ]
+      },
+      "argv": [
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Scripts\\python.exe",
+        "-I",
+        "-B",
+        "-m",
+        "accelsched_kai.advisor",
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI\\fixtures\\02_fragmentation.json"
+      ],
+      "cwd": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work",
+      "exit_code": 0,
+      "output_sha256": "711af1696fa89333216bdc11ae338749baad8f41539cbc203c211abda605c732",
+      "status": "PHYSICAL_VALID",
+      "stdout_sha256": "61896594a5460d3580d3c9f29451bcf40b47cc8d1cacc1b2b02a187a77daba54",
+      "trace_equal_source": true
+    },
+    {
+      "advice": {
+        "first_fit": [
+          0
+        ],
+        "lp_best_fit": [
+          0
+        ],
+        "true_pgfp": [
+          1
+        ]
+      },
+      "argv": [
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Scripts\\python.exe",
+        "-I",
+        "-B",
+        "-m",
+        "accelsched_kai.advisor",
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI\\fixtures\\03_prediction_shift.json"
+      ],
+      "cwd": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work",
+      "exit_code": 0,
+      "output_sha256": "caf84a26d22e0f62624732e31e67a668932f12ec3f681dd974a41b1450472ab9",
+      "status": "PHYSICAL_VALID",
+      "stdout_sha256": "85a1d744f1d66d8d10a6597e56336f8271eec5be984b983cbc2e65cd66e0bc9d",
+      "trace_equal_source": true
+    },
+    {
+      "advice": {
+        "first_fit": [
+          0
+        ],
+        "lp_best_fit": [
+          0
+        ],
+        "true_pgfp": [
+          0
+        ]
+      },
+      "argv": [
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Scripts\\python.exe",
+        "-I",
+        "-B",
+        "-m",
+        "accelsched_kai.advisor",
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI\\fixtures\\04_dual_degeneracy.json"
+      ],
+      "cwd": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work",
+      "exit_code": 0,
+      "output_sha256": "facc531545d29ba802fdfa5bd47cde49709d140d90aefb060fd33a04bf7f2d98",
+      "status": "PHYSICAL_VALID",
+      "stdout_sha256": "dec92986e6bcc4f6823040093e1fe10a384140478607d9da3f131834f80ac695",
+      "trace_equal_source": true
+    },
+    {
+      "argv": [
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Scripts\\python.exe",
+        "-I",
+        "-B",
+        "-m",
+        "accelsched_kai.advisor",
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\tmp\\unsupported.json"
+      ],
+      "cwd": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work",
+      "exit_code": 1,
+      "result": {
+        "baseline_sha": "9dc0c263d2aefeb151d565166b6b950e2ac9f6a5",
+        "error": "unsupported semantics: gang",
+        "input_file_sha256": "d901a1ec72588155a19a907163aa4baf4ee03e21ca7f714b4d78e8408c2550ab",
+        "input_sha256": "c74158e2ff67c9b12d0b076ba378cf4ec5a5e1c488e2fab72c7038d11231ce9e",
+        "mode": "PROBE_ONLY_CPU_OFFLINE",
+        "output_sha256": "e9808b1eebb2422097f4ed8c7b7a28787d88eb845a28405c62697dc98c7335c7",
+        "status": "UNSUPPORTED_CONSTRAINT"
+      }
+    },
+    {
+      "argv": [
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Scripts\\python.exe",
+        "-I",
+        "-B",
+        "-m",
+        "accelsched_kai.advisor",
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\tmp\\invalid.json"
+      ],
+      "cwd": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work",
+      "exit_code": 1,
+      "result": {
+        "error": "duplicate JSON key: x",
+        "input_file_sha256": "d38245cfdb5d2239d67fe2a719312768b668a6928d8d97d04fbce83215e50b44",
+        "output_sha256": "4fec9c1b21caace23e4e5be76b8c8a49c546f430971a7b912b95d34756527fc2",
+        "status": "INVALID_INPUT"
+      }
+    },
+    {
+      "argv": [
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Scripts\\accelsched-kai.exe",
+        "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI\\fixtures\\01_gpu_family.json"
+      ],
+      "exit_code": 0,
+      "status": "PHYSICAL_VALID"
+    }
+  ],
+  "implementation_commit": "1070a75a6e37ab8eac6aaf0ff4402c5a5cb30dd1",
+  "isolated_imports": {
+    "advisor": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Lib\\site-packages\\accelsched_kai\\advisor.py",
+    "forbidden_loaded": [],
+    "modules": {
+      "certified_pgfp": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Lib\\site-packages\\certified_pgfp.py",
+      "lp_backends": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Lib\\site-packages\\lp_backends.py",
+      "lp_certify": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Lib\\site-packages\\lp_certify.py",
+      "lp_contract": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Lib\\site-packages\\lp_contract.py",
+      "m0_oracle": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Lib\\site-packages\\m0_oracle.py"
+    },
+    "prefix": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv",
+    "sys_path": [
+      "D:\\software\\anaconda3\\python314.zip",
+      "D:\\software\\anaconda3\\DLLs",
+      "D:\\software\\anaconda3\\Lib",
+      "D:\\software\\anaconda3",
+      "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv",
+      "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv\\Lib\\site-packages",
+      "D:\\software\\anaconda3\\Lib\\site-packages",
+      "D:\\software\\anaconda3\\Lib\\site-packages\\win32",
+      "D:\\software\\anaconda3\\Lib\\site-packages\\win32\\lib",
+      "D:\\software\\anaconda3\\Lib\\site-packages\\pythonwin"
+    ]
+  },
+  "limitations": [
+    "One Windows/Python dependency environment; venv shares preinstalled numerical dependencies",
+    "Three WinError32 file-lock build/cache failures retained; bounded build succeeded on separate D-drive task directory without system changes",
+    "No GPU/Colab/Kubernetes/paid services/Actions/large benchmarks; no global session-state claim",
+    "Native time limit is not a hard watchdog",
+    "Installed commands executed outside checkout with isolated Python; reference source unchanged"
+  ],
+  "native_highs_version": "1.12.0",
+  "pip_check": "No broken requirements found.",
+  "status": "PASS",
+  "storage": {
+    "build_bytes": 96946,
+    "build_files": 28,
+    "cleanup": "Task temporary/build/cache/venv directories retained and inventoried; no deletions or global settings changes",
+    "experiment_evidence": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI\\evidence",
+    "packaging_temporary": "D:/sae-kai-issue1-build",
+    "repository": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI",
+    "temporary": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\tmp",
+    "venv": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-work\\venv",
+    "work_bytes": 12906348,
+    "work_files": 993
+  },
+  "successful_build_log": "Processing .\\source\n  Preparing metadata (pyproject.toml): started\n  Preparing metadata (pyproject.toml): finished with status 'done'\nBuilding wheels for collected packages: accelsched-kai\n  Building wheel for accelsched-kai (pyproject.toml): started\n  Building wheel for accelsched-kai (pyproject.toml): finished with status 'done'\n  Created wheel for accelsched-kai: filename=accelsched_kai-0.1.0-py3-none-any.whl size=11015 sha256=164875eba48a0cf0ec61b79c85d91f28038101b5377be363866f02affe16e5c2\n  Stored in directory: D:\\sae-kai-issue1-build\\tmp\\pip-ephem-wheel-cache-dwxho97d\\wheels\\57\\4f\\d0\\5ffde53cbe7f5d30414303c905531dffad3f653a5758e692d9\nSuccessfully built accelsched-kai\n",
+  "successful_install_log": "Processing .\\wheels\\accelsched_kai-0.1.0-py3-none-any.whl\nInstalling collected packages: accelsched-kai\n  Attempting uninstall: accelsched-kai\n    Found existing installation: accelsched-kai 0.1.0\n    Uninstalling accelsched-kai-0.1.0:\n      Successfully uninstalled accelsched-kai-0.1.0\nSuccessfully installed accelsched-kai-0.1.0\n",
+  "upstream_reference": {
+    "head": "9dc0c263d2aefeb151d565166b6b950e2ac9f6a5",
+    "path": "D:\\Dropbox\\study\\ms-phd\\PHD-EPFL\\Doctoral proposal\\EPFL\\small interesting research\\AccelSched-KAI-reference",
+    "remote_edits": "none; no pushes or API writes to either upstream; NVIDIA repository never modified",
+    "tracked_and_untracked_status_clean": true
+  },
+  "wheel": {
+    "bytes": 11015,
+    "files": [
+      "accelsched_kai/__init__.py",
+      "accelsched_kai/adapter.py",
+      "accelsched_kai/advisor.py",
+      "accelsched_kai/oracle.py",
+      "accelsched_kai/schema.py",
+      "accelsched_kai-0.1.0.dist-info/licenses/LICENSE",
+      "accelsched_kai-0.1.0.dist-info/METADATA",
+      "accelsched_kai-0.1.0.dist-info/WHEEL",
+      "accelsched_kai-0.1.0.dist-info/entry_points.txt",
+      "accelsched_kai-0.1.0.dist-info/top_level.txt",
+      "accelsched_kai-0.1.0.dist-info/RECORD"
+    ],
+    "path": "D:\\sae-kai-issue1-build\\wheels\\accelsched_kai-0.1.0-py3-none-any.whl",
+    "sha256": "164875eba48a0cf0ec61b79c85d91f28038101b5377be363866f02affe16e5c2"
+  }
+}
