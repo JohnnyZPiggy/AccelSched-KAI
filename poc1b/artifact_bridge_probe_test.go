@@ -25,6 +25,7 @@ import (
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/framework"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/test_utils"
 	"github.com/kai-scheduler/KAI-scheduler/pkg/scheduler/test_utils/tasks_fake"
+	commonconstants "github.com/kai-scheduler/api/constants"
 	"go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 )
@@ -71,8 +72,12 @@ func bridgeProjection(t *testing.T, f nativeFixture) ([]byte, error) {
 	nodes := []any{}
 	for _, name := range []string{"node0", "node1"} {
 		n := s.ClusterInfo.Nodes[name]
-		if n == nil || n.Name != name || n.Node == nil || n.Node.Name != name || n.NumaTopology != nil || n.NodeResourceTopology != nil || n.HasDRAGPUs || len(n.LegacyMIGTasks) != 0 || len(n.Node.Spec.Taints) != 0 || len(n.Node.Labels) != 0 || n.MaxTaskNum < 4 {
+		if n == nil || n.Name != name || n.Node == nil || n.Node.Name != name || n.NumaTopology != nil || n.NodeResourceTopology != nil || n.HasDRAGPUs || len(n.LegacyMIGTasks) != 0 || len(n.Node.Spec.Taints) != 0 || n.MaxTaskNum < 4 {
 			return nil, fmt.Errorf("unsupported node semantics")
+		}
+		labels := map[string]string{commonconstants.GpuCountLabel: "0", node_info.GpuMemoryLabel: "100", "node-role.kubernetes.io/mig-enabled": "false", commonconstants.MigStrategyLabel: "", tasks_fake.NodeAffinityKey: name}
+		if !reflect.DeepEqual(n.Node.Labels, labels) {
+			return nil, fmt.Errorf("unknown node labels/family")
 		}
 		entry := map[string]any{"name": name, "uid": string(n.Node.UID), "shape": "S", "family": "CPU_ONLY_TEST", "native": map[string]any{"spec": n.Node.Spec, "labels": n.Node.Labels, "annotations": n.Node.Annotations, "status": n.Node.Status}}
 		for key, v := range map[string]resource_info.ResourceVector{"allocatable": n.AllocatableVector, "idle": n.IdleVector, "used": n.UsedVector, "releasing": n.ReleasingVector} {
@@ -99,7 +104,7 @@ func bridgeProjection(t *testing.T, f nativeFixture) ([]byte, error) {
 	pending := 0
 	for _, id := range ids {
 		p := job.GetAllPodsMap()[common_info.PodID(id)]
-		if p == nil || p.Pod == nil || string(p.Pod.UID) != id || p.ResourceRequestType != pod_info.RequestTypeRegular || p.GpuRequirement.GPUs() != 0 || p.GpuRequirement.GpuMemory() != 0 || len(p.GpuRequirement.MigResources()) != 0 || len(p.GpuRequirement.DraGpuCounts()) != 0 || p.VectorMap.Len() != 4 {
+		if p == nil || p.Pod == nil || string(p.Pod.UID) != id || p.ResourceRequestType != pod_info.RequestTypeRegular || !p.NUMAPlacement.IsEmpty() || p.GpuRequirement.GPUs() != 0 || p.GpuRequirement.GpuMemory() != 0 || len(p.GpuRequirement.MigResources()) != 0 || len(p.GpuRequirement.DraGpuCounts()) != 0 || p.VectorMap.Len() != 4 {
 			return nil, fmt.Errorf("unsupported task/resources")
 		}
 		var spec map[string]json.RawMessage
