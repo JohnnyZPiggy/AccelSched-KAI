@@ -214,8 +214,10 @@ def test_G1_G6_stale_snapshot_rejected(change):
     denied(ba.load_artifact(raw, s))
 
 
-@pytest.mark.parametrize("kind", ["timeout", "infeasible", "error", "uncertified", "hash", "primal", "dual", "rc", "objective", "nonfinite", "missing", "price-sign"])
-def test_G3_G6_dishonest_solver_flags_never_bypass_certificate(kind):
+SOLVER_FAULTS = ["timeout", "infeasible", "error", "uncertified", "hash", "primal", "dual", "rc", "objective", "nonfinite", "missing", "price-sign"]
+
+
+def solver_fault(kind):
     modules = adapter.frozen()
     a, _ = adapter.instance(load())
     model, _ = modules["certified_pgfp"].canonical_shape(a)
@@ -234,6 +236,13 @@ def test_G3_G6_dishonest_solver_flags_never_bypass_certificate(kind):
     elif kind == "price-sign": raw.pi[1] = 1e-9  # Cert tolerance does not grant a negative scarcity price.
     with patch.object(modules["lp_backends"], "solve_lp", return_value=result):
         out = build(alpha=0)
+    out["injected_independent_raw_check"] = ba._safe_diagnostic(advisor.plain(modules["lp_certify"].certify(model, raw)))
+    return out
+
+
+@pytest.mark.parametrize("kind", SOLVER_FAULTS)
+def test_G3_G6_dishonest_solver_flags_never_bypass_certificate(kind):
+    out = solver_fault(kind)
     denied(out)
     if kind == "timeout": assert out["status"] == "SOLVER_TIMEOUT"
 
@@ -306,12 +315,18 @@ def record_evidence(directory):
     """Fresh-process native receipts, separate from injected test witnesses."""
     directory.mkdir(parents=True, exist_ok=False)
     records = []
-    scenarios = [("F01", load()), ("F02", load(1)), ("F03", load(2)), ("F04", load(3)),
-                 ("multi-shape", multi_snapshot())]
+    scenarios = [("F01", load(), {}), ("F02", load(1), {}), ("F03", load(2), {}), ("F04", load(3), {}),
+                 ("multi-shape", multi_snapshot(), {})]
     relaxed = load(3); relaxed["tasks"][0]["eligible"] = []
-    scenarios.append(("relaxed-ineligible", relaxed))
-    for name, snapshot in scenarios:
-        result = build(snapshot)
+    zero = load(); zero["future"][0]["weight"] = 0
+    scarce = load(3); scarce["tasks"][0].update(demand=[2, 0, 0], value=2)
+    scarce["tasks"].append(dict(scarce["tasks"][0], id="small", demand=[1, 0, 0], value=0))
+    oversized = load(); oversized["tasks"][0]["demand"] = [5, 2, 2]
+    scenarios.extend([("relaxed-ineligible", relaxed, {}), ("zero-weight-tie", zero, {}),
+        ("clipped-marginal", load(1), dict(BF=2., alpha=0)),
+        ("clipped-price", scarce, dict(BP=.5, alpha=1)), ("resource-infeasible", oversized, {})])
+    for name, snapshot, params in scenarios:
+        result = build(snapshot, **params)
         assert result["status"] == ba.STATUS, result
         artifact = result["artifact"]
         raw = schema.encoded(artifact)
@@ -325,6 +340,16 @@ def record_evidence(directory):
                             pairs=artifact["pairs"], certificate=artifact["lp"]["certificate"]))
     # Analytical evidence is explicitly distinct from native artifacts above.
     (directory / "analytical-dual-witnesses.json").write_bytes(schema.encoded(duals()))
+    failures = []
+    for kind in SOLVER_FAULTS:
+        out = solver_fault(kind); denied(out)
+        failures.append(dict(scenario="injected-solver-" + kind, result=out))
+    for i, mutate in enumerate(ARTIFACT_MUTATIONS):
+        corrupted = deepcopy(accepted())
+        mutate(corrupted)
+        out = ba.load_artifact(rehash(corrupted), load()); denied(out)
+        failures.append(dict(scenario="rehashed-artifact-" + str(i), corrupted=corrupted, result=out))
+    (directory / "injected-failures.json").write_bytes(schema.encoded(failures))
     (directory / "summary.json").write_bytes(schema.encoded(records))
     print(json.dumps(dict(status="PASS", native_runs=len(records), artifact_hashes={r["name"]: r["file_sha256"] for r in records})))
 
