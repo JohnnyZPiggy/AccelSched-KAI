@@ -77,28 +77,64 @@ def test_G3_no_hindsight_realized_never_changes_decisions():
         assert pb._stage_snapshot(trace, [n["capacity"] for n in trace["nodes"]], batch)["realized_future"] == []
 
 
-def test_G3_static_is_initial_only_dynamic_refreshes_and_provenance_is_immutable():
+def test_G3_static_is_initial_only_dynamic_refreshes_before_every_arrival_and_provenance_is_immutable():
     trace = scene("scarce_matched", 1)
     static, safe, dynamic = (pb.run_arm(trace, a) for a in (pb.STATIC, pb.STATIC_SAFE, pb.DYNAMIC_LP))
-    assert len({s["artifact_sha256"] for s in static["stages"]}) == 1
-    assert static["stages"][0]["state_is_initial"]
-    assert all(s["advice"] == "NEUTRAL_AFTER_MUTATION" for s in safe["stages"] if not s["state_is_initial"])
-    residual = [n["capacity"] for n in trace["nodes"]]
-    expected, index = [], 0
-    for s, batch in enumerate(trace["arrivals"]):
-        expected.append(pb.digest(residual if s == 0 else dynamic["steps"][index - 1]["after"]))
-        index += len(batch)
-    assert [s["residual_sha256"] for s in dynamic["stages"]] == expected
+    assert len({s["advice"]["artifact_sha256"] for s in static["steps"]}) == 1
+    assert static["steps"][0]["advice"]["state_is_initial"]
+    assert all(s["advice"]["advice"] == "NEUTRAL_AFTER_MUTATION" for s in safe["steps"] if not s["advice"]["state_is_initial"])
+    assert any(not s["advice"]["state_is_initial"] for s in safe["steps"])
+    flat = [t for batch in trace["arrivals"] for t in batch]
+    assert len(dynamic["steps"]) == len(flat)  # one fresh advice record per arrival, not per batch
+    previous = pb.digest([n["capacity"] for n in trace["nodes"]])
+    for task, step in zip(flat, dynamic["steps"]):
+        assert step["before_sha256"] == previous and step["advice"]["advice"] == "FRESH_CERTIFIED_LP"
+        projection = pb._stage_snapshot(trace, step["before"], [task])
+        assert step["advice"]["projection_sha256"] == pb.digest(projection) and projection["realized_future"] == []
+        previous = step["after_sha256"]
     advice = pb._static_advice(trace, pb.CONTROLS)
     assert advice and hashlib.sha256(advice["raw"]).hexdigest() == advice["raw_sha256"]
 
 
-def test_G3_uncertified_output_is_rejected_and_stage_goes_neutral():
+def test_G3_two_task_batch_second_decision_uses_fresh_state_not_batch_start_scores():
+    trace = pb.batch_regression_trace()
+    assert len(trace["arrivals"]) == 1 and len(trace["arrivals"][0]) == 2
+    stale = pb.stale_batch_start_placement(trace)
+    case = pb.batch_regression_case()
+    assert stale == [1, 0] and case["stale_batch_start_diagnostic"]["placement"] == [1, 0]
+    for arm in (pb.DYNAMIC, pb.DYNAMIC_LP):
+        record = case["arms"][arm]
+        assert record["placement"] == [1, 1] != stale  # first placement changed the marginal; the second decision differs
+        first, second = record["steps"]
+        assert first["before"] == [[4, 32, 128], [4, 32, 128]] and second["before"] == first["after"] == [[4, 32, 128], [2, 24, 96]]
+        assert first["advice"]["projection_sha256"] != second["advice"]["projection_sha256"]
+        assert first["advice"]["advice_sha256"] != second["advice"]["advice_sha256"]
+        assert first["receipt_errors"] == second["receipt_errors"] == []
+    lp = case["arms"][pb.DYNAMIC_LP]["steps"]
+    assert lp[0]["advice"]["lp"]["artifact_sha256"] != lp[1]["advice"]["lp"]["artifact_sha256"]
+    assert case["arms"][pb.DYNAMIC]["admitted_future"] == 1 > case["stale_batch_start_diagnostic"]["admitted_future"] == 0
+    # the second task's fresh scores really differ from the batch-start scores
+    batch_start = pb._marginal_scores(pb._stage_snapshot(trace, [n["capacity"] for n in trace["nodes"]], trace["arrivals"][0]), pb.CONTROLS)
+    fresh = pb._marginal_scores(pb._stage_snapshot(trace, case["arms"][pb.DYNAMIC]["steps"][1]["before"], [trace["arrivals"][0][1]]), pb.CONTROLS)
+    assert batch_start[("T1", "N0")] == batch_start[("T1", "N1")] != fresh[("T1", "N1")] and fresh[("T1", "N0")] < fresh[("T1", "N1")]
+
+
+def test_G3_replay_detects_tampered_per_task_receipts():
+    trace = scene("scarce_matched", 2)
+    record = pb.run_arm(trace, pb.DYNAMIC)
+    assert pb.replay_steps(trace, record["steps"], record["placement"]) == []
+    bad = deepcopy(record["steps"]); bad[1]["before"][0][0] += 1
+    assert pb.replay_steps(trace, bad, record["placement"])
+    wrong = record["placement"][:]; wrong[0] = 0 if wrong[0] != 0 else 1
+    assert pb.replay_steps(trace, record["steps"], wrong)
+
+
+def test_G3_uncertified_output_is_rejected_and_task_goes_neutral():
     trace = scene("matched", 0)
     with patch.object(bounded_advice, "build_artifact", return_value=dict(status="LP_UNCERTIFIED", error="forced")):
         record = pb.run_arm(trace, pb.DYNAMIC_LP)
     assert record["status"] == "PHYSICAL_VALID"
-    assert all(s["advice"] == "NEUTRAL_UNCERTIFIED" and s["lp"] == dict(status="LP_UNCERTIFIED") for s in record["stages"])
+    assert all(s["advice"]["advice"] == "NEUTRAL_UNCERTIFIED" and s["advice"]["lp"] == dict(status="LP_UNCERTIFIED") for s in record["steps"])
     with patch.object(bounded_advice, "build_artifact", return_value=dict(status="LP_UNCERTIFIED")):
         assert pb.run_arm(trace, pb.STATIC)["status"] == "STATIC_ADVICE_UNCERTIFIED"
 
@@ -120,8 +156,8 @@ def test_G4_constant_price_within_shape_is_identified(small):
     for case in small["same_shape"].values():
         assert case["status"] == bounded_advice.STATUS and case["constant_within_every_shape"]
     assert small["same_shape"]["single_shape"]["price_by_task_and_shape"]["T0"].keys() == {"S4"}
-    lp_stages = [st for s in small["scenes"] for st in s["arms"][pb.DYNAMIC_LP]["stages"] if "lp" in st]
-    assert lp_stages and all(st["lp"]["constant_price_groups"] <= st["lp"]["price_groups"] for st in lp_stages if st["lp"]["status"] == bounded_advice.STATUS)
+    lp_steps = [st["advice"] for s in small["scenes"] for st in s["arms"][pb.DYNAMIC_LP]["steps"] if "lp" in st["advice"]]
+    assert lp_steps and all(a["lp"]["constant_price_groups"] <= a["lp"]["price_groups"] for a in lp_steps if a["lp"]["status"] == bounded_advice.STATUS)
 
 
 def test_G5_paired_outcomes_exact_denominators_and_single_post_freeze_evaluation():
@@ -163,6 +199,8 @@ def test_G6_in_process_repeat_is_byte_identical(small):
     again = pb.experiment(scenes_per_regime=1)
     assert schema.encoded(again) == schema.encoded(small)
     assert "timing" not in json.dumps(small).lower()
+    assert small["version"] == "M4A-2" and small["decision_unit"] == "INDIVIDUAL_ARRIVAL"
+    assert small["batch_regression"]["arms"][pb.DYNAMIC]["placement"] == [1, 1]
 
 
 def test_G6_fresh_processes_are_byte_identical(tmp_path):

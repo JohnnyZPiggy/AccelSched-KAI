@@ -13,7 +13,7 @@ import time
 from . import adapter, advisor, bounded_advice, oracle, schema
 from .schema import digest, encoded
 
-VERSION = "M4A-1"
+VERSION = "M4A-2"
 MODE = "PROBE_ONLY_CPU_OFFLINE"
 REFERENCE, STATIC, STATIC_SAFE = ("OFFLINE_REFERENCE_ONLY", "STATIC_ADVICE_COUNTERFACTUAL",
                                   "STATIC_SAFE_FALLBACK")
@@ -207,48 +207,70 @@ def _metrics(trace, residual):
                 units="F: weighted forecast-node fits; slack/stranded: " + ", ".join(UNITS))
 
 
+def replay_steps(trace, steps, placement):
+    """Independently re-derive every per-task before/after state from the placements alone."""
+    nodes, residual, errors = trace["nodes"], [list(n["capacity"]) for n in trace["nodes"]], []
+    flat = [t for batch in trace["arrivals"] for t in batch]
+    if len(steps) != len(flat) or len(placement) != len(flat):
+        return ["step count mismatch"]
+    for task, step, chosen in zip(flat, steps, placement):
+        if step["task"] != task["id"] or step["before_sha256"] != digest(residual) or step["before"] != residual:
+            errors.append("replay before-state mismatch at " + task["id"])
+        if chosen >= 0:
+            if not (oracle.allowed(nodes[chosen], task) and oracle.fits(residual[chosen], task["demand"])):
+                errors.append("replay infeasible acceptance at " + task["id"])
+            residual[chosen] = [r - d for r, d in zip(residual[chosen], task["demand"])]
+        if step["after_sha256"] != digest(residual) or step["after"] != residual:
+            errors.append("replay after-state mismatch at " + task["id"])
+    return errors
+
+
 def run_arm(trace, arm, controls=CONTROLS):
     """One arm over the trace; returns a normalized (timing-free) record."""
     nodes = trace["nodes"]
     residual = [list(n["capacity"]) for n in nodes]
-    flat = [t for batch in trace["arrivals"] for t in batch]
-    placement, steps, stages, errors = [], [], [], []
+    placement, steps, errors = [], [], []
     static = _static_advice(trace, controls) if arm in (STATIC, STATIC_SAFE) else None
     if arm in (STATIC, STATIC_SAFE) and static is None:
         return dict(arm=arm, status="STATIC_ADVICE_UNCERTIFIED")
     for s, batch in enumerate(trace["arrivals"]):
-        scores, info = {}, dict(stage=s, advice="NONE")
-        if arm == DYNAMIC:
-            scores = _marginal_scores(_stage_snapshot(trace, residual, batch), controls)
-            info.update(advice="FRESH_MARGINAL_ALPHA0", residual_sha256=digest(residual))
-        elif arm == DYNAMIC_LP:
-            scores, lp_info, _ = _lp_scores(_stage_snapshot(trace, residual, batch), controls)
-            info.update(advice="FRESH_CERTIFIED_LP" if scores is not None else "NEUTRAL_UNCERTIFIED",
-                        residual_sha256=digest(residual), lp=lp_info)
-            scores = scores or {}
-        elif arm in (STATIC, STATIC_SAFE):
-            if hashlib.sha256(static["raw"]).hexdigest() != static["raw_sha256"]:
-                raise AssertionError("static advice artifact mutated after certification")
-            fresh = residual == static["initial"]
-            info.update(advice="INITIAL_STATE_ADVICE" if arm == STATIC or fresh else "NEUTRAL_AFTER_MUTATION",
-                        artifact_sha256=static["sha256"], state_is_initial=fresh)
-            scores = static["scores"] if arm == STATIC or fresh else {}
-        stages.append(info)
-        for task in batch:
+        for task in batch:  # decision unit = ONE arrival: advice is recomputed from the live residual before every pick
             before = [r[:] for r in residual]
+            info, scores = dict(advice="NONE"), {}
+            if arm in (DYNAMIC, DYNAMIC_LP):
+                projection = _stage_snapshot(trace, residual, [task])
+                info.update(projection_sha256=digest(projection))
+                if arm == DYNAMIC:
+                    scores = _marginal_scores(projection, controls)
+                    info.update(advice="FRESH_MARGINAL_ALPHA0")
+                else:
+                    scores, lp_info, _ = _lp_scores(projection, controls)
+                    info.update(advice="FRESH_CERTIFIED_LP" if scores is not None else "NEUTRAL_UNCERTIFIED", lp=lp_info)
+                    scores = scores or {}
+                info.update(advice_sha256=digest(sorted([k[0], k[1], v] for k, v in scores.items())))
+            elif arm in (STATIC, STATIC_SAFE):
+                if hashlib.sha256(static["raw"]).hexdigest() != static["raw_sha256"]:
+                    raise AssertionError("static advice artifact mutated after certification")
+                initial = residual == static["initial"]
+                info.update(advice="INITIAL_STATE_ADVICE" if arm == STATIC or initial else "NEUTRAL_AFTER_MUTATION",
+                            artifact_sha256=static["sha256"], state_is_initial=initial)
+                scores = static["scores"] if arm == STATIC or initial else {}
             chosen = _pick(arm, task, nodes, residual, scores)
             if static is not None and chosen >= 0 and (task["id"], nodes[chosen]["id"]) in static["excluded"]:
                 errors.append("static exclusion contradicted by live state")
             if chosen >= 0:
                 residual[chosen] = [r - d for r, d in zip(residual[chosen], task["demand"])]
-            errors += _receipt_check(nodes, task, before, chosen, residual)
+            step_errors = _receipt_check(nodes, task, before, chosen, residual)
+            errors += step_errors
             placement.append(chosen)
             steps.append(dict(stage=s, task=task["id"], node=nodes[chosen]["id"] if chosen >= 0 else None,
-                              before_sha256=digest(before), after_sha256=digest(residual), after=[r[:] for r in residual]))
+                              before_sha256=digest(before), before=before, advice=info, receipt_errors=step_errors,
+                              after_sha256=digest(residual), after=[r[:] for r in residual]))
+    errors += replay_steps(trace, steps, placement)
     audit = oracle.audit(_full(trace), placement, residual)
     status = "PHYSICAL_VALID" if audit["status"] == "PHYSICAL_VALID" and not errors else "PHYSICAL_INVALID"
     record = dict(arm=arm, status=status, errors=errors + audit["errors"], placement=placement, steps=steps,
-                  stages=stages, accepted_current=audit["accepted"], placed_value=audit["placed_value"],
+                  accepted_current=audit["accepted"], placed_value=audit["placed_value"],
                   final_residual=residual, metrics=_metrics(trace, residual))
     if status == "PHYSICAL_VALID":
         out = oracle.evaluate(_full(trace, realized=True), residual)  # realized jobs enter only here
@@ -343,9 +365,9 @@ def _search_trace(caps, kinds, forecast, realized):
 def _run_simple(trace, arm):
     """Marginal-only dynamic arm or best-fit reference; no LP (the search is the cheap path)."""
     nodes, residual = trace["nodes"], [list(n["capacity"]) for n in trace["nodes"]]
-    for s, batch in enumerate(trace["arrivals"]):
-        scores = _marginal_scores(_stage_snapshot(trace, residual, batch), CONTROLS) if arm == DYNAMIC else {}
+    for batch in trace["arrivals"]:
         for task in batch:
+            scores = _marginal_scores(_stage_snapshot(trace, residual, [task]), CONTROLS) if arm == DYNAMIC else {}
             chosen = _pick(arm, task, nodes, residual, scores)
             if chosen >= 0:
                 residual[chosen] = [r - d for r, d in zip(residual[chosen], task["demand"])]
@@ -409,6 +431,43 @@ def same_shape_case():
     return out
 
 
+# ---- two-task same-batch regression (T2 review of PR #28, G3) ---------------------------
+def stale_batch_start_placement(trace):
+    """DIAGNOSTIC ONLY (never an arm): the rejected design that scores a whole batch once at batch start."""
+    nodes, residual, placement = trace["nodes"], [list(n["capacity"]) for n in trace["nodes"]], []
+    for batch in trace["arrivals"]:
+        scores = _marginal_scores(_stage_snapshot(trace, residual, batch), CONTROLS)
+        for task in batch:
+            chosen = _pick(DYNAMIC, task, nodes, residual, scores)
+            if chosen >= 0:
+                residual[chosen] = [r - d for r, d in zip(residual[chosen], task["demand"])]
+            placement.append(chosen)
+    return placement
+
+
+def batch_regression_trace():
+    ids = ["N0", "N1"]
+    nodes = [dict(id=i, gpu_family="A", shape="S4", capacity=SHAPE_TYPES["S4"][:]) for i in ids]
+    mid, large = TASK_TYPES["mid"], TASK_TYPES["large"]
+    first = dict(id="T0", demand=mid[:], value=_value(mid), gpu_family=None, eligible=["N1"])
+    second = dict(id="T1", demand=mid[:], value=_value(mid), gpu_family=None, eligible=ids[:])
+    forecast = [dict(id="F0", demand=large[:], weight=2, gpu_family=None, eligible=ids[:])]
+    realized = [dict(id="R" + str(i), demand=large[:], value=_value(large), gpu_family=None, eligible=ids[:]) for i in range(2)]
+    return dict(id="batch_regression", regime="batch_regression", nodes=nodes, arrivals=[[first, second]],
+                forecast=forecast, realized=realized)
+
+
+def batch_regression_case():
+    trace = batch_regression_trace()
+    stale = stale_batch_start_placement(trace)
+    audit = oracle.audit(_full(trace), stale)
+    stale_outcome = oracle.evaluate(_full(trace, realized=True), audit["residual"])["sequential"]
+    arms = {a: run_arm(trace, a) for a in (PRIMARY_REFERENCE, DYNAMIC, DYNAMIC_LP)}
+    return dict(trace_sha256=digest(trace), stale_batch_start_diagnostic=dict(placement=stale, admitted_future=stale_outcome["count"],
+                residual=audit["residual"]), arms={k: dict(placement=v["placement"], steps=v["steps"],
+                admitted_future=v["outcome"]["sequential"]["count"]) for k, v in arms.items()})
+
+
 def source_identity():
     root = Path(__file__).resolve().parent
     return dict(upstream_sha=adapter.BASELINE, frozen_source_sha256=dict(adapter.SOURCE_HASHES),
@@ -420,11 +479,13 @@ def experiment(scenes_per_regime=SCENES_PER_REGIME):
     adapter.frozen()  # fail closed on any frozen-source mismatch before any arm runs
     scenes = [run_scene(make_scene(r, k)) for r in REGIMES for k in range(scenes_per_regime)]
     valid = all(a["status"] == "PHYSICAL_VALID" for s in scenes for a in s["arms"].values())
-    record = dict(version=VERSION, mode=MODE, claim_scope="offline simulation only; not Native KAI, GPU, production or general performance",
+    record = dict(version=VERSION, mode=MODE, decision_unit="INDIVIDUAL_ARRIVAL", supersedes_head="03a49de8da05edfe6b3137d621b8addcc02b060c",
+                  claim_scope="offline simulation only; not Native KAI, GPU, production or general performance",
                   identity=source_identity(), controls=CONTROLS, tie_rule=TIE_RULE, regimes={k: list(v) for k, v in REGIMES.items()},
                   scenes_per_regime=scenes_per_regime, all_arms_physically_valid=valid, scenes=scenes, aggregate=aggregate(scenes),
                   witnesses={r: {arm: witnesses(scenes, arm, r) for arm in (DYNAMIC, DYNAMIC_LP, STATIC)} for r in REGIMES},
-                  counterexample_search=counterexample_search(), same_shape=same_shape_case())
+                  counterexample_search=counterexample_search(), same_shape=same_shape_case(),
+                  batch_regression=batch_regression_case())
     adapter.frozen()  # frozen blobs unchanged at the end
     record["record_sha256"] = digest(record)
     return record
