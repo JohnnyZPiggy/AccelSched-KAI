@@ -1,148 +1,120 @@
-# AccelSched-KAI PoC-0
+# AccelSched-KAI
 
-CPU-only **offline KAI-like scheduling advisor**, schema v0.1. This is not native
-KAI integration. It neither submits workloads nor implements Kubernetes semantics.
-All results are `PROBE_ONLY`, not algorithm performance measurements.
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-Four production modules: `schema.py` validates inputs/statuses; `adapter.py` maps
-stable input indices to frozen `m0_oracle.Instance`; `advisor.py` certifies original
-Shape-LP prices and calls the pinned research `_replay`; `oracle.py` independently
-audits physical placement and future admissions. No scheduler `validate` or
-placement decision is reused by the independent Oracle. The one test file also
-records evidence; no new framework or service is needed.
+**Certified optimization advice for native KAI scheduling experiments.**
 
-## Reuse and installation
+AccelSched-KAI connects the [AccelSched](https://github.com/JohnnyZPiggy/AccelSched) optimization research engine with the [KAI Scheduler](https://github.com/kai-scheduler/KAI-scheduler) through a versioned, fail-closed test bridge. It combines original Shape-LP certificates, native KAI Fake Session allocation, whole-GPU resource checks, and reproducible policy comparisons.
 
-Required upstream: [AccelSched at
-9dc0c263d2aefeb151d565166b6b950e2ac9f6a5](https://github.com/JohnnyZPiggy/AccelSched/tree/9dc0c263d2aefeb151d565166b6b950e2ac9f6a5).
-Read references: [m0_oracle.py](https://github.com/JohnnyZPiggy/AccelSched/blob/9dc0c263d2aefeb151d565166b6b950e2ac9f6a5/m0_oracle.py),
-[certified_pgfp.py](https://github.com/JohnnyZPiggy/AccelSched/blob/9dc0c263d2aefeb151d565166b6b950e2ac9f6a5/certified_pgfp.py),
-[bench_ultra_pgfp.py](https://github.com/JohnnyZPiggy/AccelSched/blob/9dc0c263d2aefeb151d565166b6b950e2ac9f6a5/bench_ultra_pgfp.py).
-The pinned commit is development main, not necessarily the v1.0.0 release tag.
-The dependency metadata says `accelsched==1.0.0`; **that version alone is
-insufficient**. Runtime checks all five algorithm/LP module SHA-256 hashes against
-the pinned Git blobs (only CRLF to LF normalization). A mismatch fails closed as
-`INTERNAL_ERROR`, with no advice. No code is vendored or patched upstream.
+![License](https://img.shields.io/badge/license-MIT-0f766e) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab) ![KAI](https://img.shields.io/badge/KAI-native%20Fake%20Session-334155) ![Status](https://img.shields.io/badge/status-research%20software-64748b)
 
-Use an isolated environment with existing NumPy, SciPy, pytest and setuptools>=77.
-Install the frozen upstream from a separate local clone/export first, then this
-repository, entirely offline once those files/dependencies are present:
+**Explore:** [Highlights](#highlights) · [Architecture](#architecture) · [Quick start](#installation-and-quick-start) · [Research findings](#research-findings) · [Repository layout](#repository-layout) · [Limitations](#scope-and-limitations)
+
+> **Research integration, not a deployment.** The native experiments call pinned KAI Predicate, node scoring, Allocate and Fake Cache **inside simulated Fake Sessions**. No live Kubernetes cluster or physical GPU is used. The repository is not an official NVIDIA/KAI plugin or a production scheduler.
+
+## Highlights
+
+- **Native scheduling experiments:** use original KAI candidate feasibility, node ordering, Allocate and Bind rather than labeling an offline heuristic as native.
+- **Certified optimization:** reuse the frozen AccelSched Shape-LP/PGFP model, independent primal-dual verification and resource audits.
+- **Trusted advice:** versioned, single-use, current-state scoring grants; stale, unsupported and inconsistent advice fails closed.
+- **Whole-GPU semantics:** exact GPU/CPU/RAM projections and heterogeneous 2–4-node Fake Session studies, with unsupported semantics rejected.
+- **Reproducible research:** Native OFF vs PGFP/LP comparisons, forecast shifts, negative results, and independent replay.
+- **Transport experiments:** cold Python subprocess versus a warm experimental worker; no production integration.
+
+## Architecture
 
 ```text
-git clone https://github.com/JohnnyZPiggy/AccelSched.git ../AccelSched-KAI-reference
-git -C ../AccelSched-KAI-reference checkout --detach 9dc0c263d2aefeb151d565166b6b950e2ac9f6a5
-python -m pip install --no-index --no-build-isolation --no-deps ../AccelSched-KAI-reference
-python -m pip install --no-index --no-build-isolation --no-deps .
-python -m accelsched_kai.advisor fixtures/01_gpu_family.json
-python -m pytest -q -ra
-python tests/test_poc.py
+  Native KAI Session + declared forecast
+                  │
+                  ▼
+      Validated resource snapshot
+                  │
+                  ▼
+        AccelSched optimization
+    PGFP marginal + original Shape-LP
+                  │
+           Certified artifact
+                  │
+                  ▼
+      Versioned trusted bridge
+     (identity, state, candidate set)
+                  │
+                  ▼
+    KAI Predicate / NodeOrderFn
+                  │
+                  ▼
+      Native Allocate + Fake Bind
+                  │
+                  ▼
+    Independent audit + held-out
+       Native future admission
 ```
 
-`python tests/test_poc.py` requires this package installed (or `PYTHONPATH=src`)
-and overwrites the bounded acceptance JSON evidence, not source/fixtures.
-`accelsched-kai <snapshot.json>` is the equivalent installed console entrypoint.
-CLI stdout is strict JSON; exit 0 means `PHYSICAL_VALID`, exit 1 means failure.
-File/JSON failures are `INVALID_INPUT`; no recommendations are emitted on failure.
-Solver settings, all attempts, native statuses, primal/dual vectors and independent
-recertification are retained. A native time limit is not a hard process watchdog.
+The bridge influences **scoring only**; KAI retains native feasibility and allocation authority. P1, P2, P2H and P2H-PC are separate bounded **test contracts**, not production APIs. Predicted future demand is not a realized future trace. An offline Oracle is used only for independently labeled comparisons.
 
-## Strict schema
+## Installation and quick start
 
-The five files under `fixtures/` define runnable examples. F01–F04 are snapshots;
-F05 contains six individually rejected snapshots in `cases`. A snapshot has
-**exactly** `schema_version`, `units`, `nodes`, `tasks`, `future`,
-`realized_future`, `constraints`. Unknown fields at every object level, duplicate
-JSON keys, NaN/Infinity, duplicate IDs, booleans masquerading as numbers and unknown
-node references are rejected. Missing values never silently receive defaults.
+Python 3.10+; NumPy and SciPy are required. The repository depends on an **exact source-pinned AccelSched revision**, not merely the `accelsched==1.0.0` package version. Runtime source hashes are checked.
 
-- Version is `"0.1"`; units are exactly
-  `["whole GPUs", "integer CPU cores", "integer RAM GiB"]`.
-- Node: `id`, `gpu_family`, `shape`, `capacity` (three integers).
-- Current/realized job: `id`, `gpu_family` (string or null), `eligible` (node IDs),
-  `demand` (three integers), `value` (finite nonnegative scalar).
-- Predicted future type: same job fields, with `weight` replacing `value`.
-- Eligibility means the explicit node list **and** the family predicate; an empty
-  list or an absent matching family lawfully rejects the task. Input order fixes
-  node/task/type indices; Shape labels use first occurrence order. Different GPU
-  families do not create different Shapes unless the input explicitly does so.
-- Supported `constraints` is `{}`. Any declared `gang`, `required_topology`,
-  `fractional_gpu`, `mig`, `dra`, `preemption` semantics fails
-  `UNSUPPORTED_CONSTRAINT`; an unknown constraint fails `INVALID_INPUT`.
-  Fractional GPU coordinates also fail `UNSUPPORTED_CONSTRAINT` directly.
-  There is no Gang atomicity, Rack topology, fractional GPU, MIG/ResourceClaim,
-  preemption or other unexpressed KAI semantics.
-- PoC limits: 1–8 nodes, 1–16 current jobs, 1–8 predicted types, 0–8 realized jobs,
-  nonzero demands, resource coordinates/value/weight <=1,000,000, and
-  `(nodes+1)^realized_jobs <=100000`. Oversized input fails `INVALID_INPUT`.
-  These are safety bounds for an exact tiny offline Oracle, not benchmark limits.
+```bash
+git clone https://github.com/JohnnyZPiggy/AccelSched.git
+git -C AccelSched checkout --detach 9dc0c263d2aefeb151d565166b6b950e2ac9f6a5
+python -m pip install ./AccelSched
 
-## Mathematical meaning
+git clone https://github.com/JohnnyZPiggy/AccelSched-KAI.git
+cd AccelSched-KAI
+python -m pip install .
+python -m accelsched_kai.advisor fixtures/01_gpu_family.json
+python -m pytest -q
+```
 
-The **unchanged original Shape-LP** aggregates capacities by Shape and relaxes
-eligibility. Its optimum is not a discrete physical/family feasibility proof.
-HiGHS is requested explicitly (`fallback=none`, maximum ten-second native limit).
-The original canonical model hash, primal feasibility, dual signs/stationarity,
-gap, complementary slackness and raw objective fields are checked again before
-price extraction. Full original model coefficients and raw certificates are output.
+For the official KAI native Fake Session test suite, use the pinned module in `poc1b/go.mod` (KAI commit `374cbb796ecff07c4a9140e59286f3e3a280e84b`; tested development toolchain Go 1.26.8):
 
-`true_pgfp` calls frozen `certified_pgfp._replay` directly: utility
-`value - prices @ demand`, descending maximum utility then task index, descending
-per-task Shape utility then Shape index, first Shape with eligible feasible nodes,
-maximum `F(after)-F(before)` then smallest node index. **One fixed certified price
-matrix** is used by the replay and LP-guided best-fit. The ledger verifier checks
-every task/Shape order, visited Shape, candidate list, marginal, choice, residual
-step and final placement against normalized original inputs. `_replay` is a pinned
-private research reference, not a public upstream API. No indexed GPU benchmark
-code is executed. `first_fit` uses input task/node order; `lp_best_fit` uses the
-same LP task/Shape ordering, then minimum residual resource sum and node index
-(the frozen reference's best-fit criterion).
+```bash
+cd poc1b
+go test -p 2 ./...
+```
 
-`F` is a **weighted node/type suitability surrogate**, not a number of future
-jobs: a type can contribute on multiple nodes. Actual future jobs are evaluated
-only after current placement is frozen. Sequential future first-fit uses realized
-input order and reports count/value/residual; exhaustive memoized offline future
-admission reports a separate optimal value/placement/count on that **same fixed
-current residual**. It may reject jobs, but may not move current jobs. This is an
-offline counterfactual for future admissions, not hindsight optimization of the
-current policy. Predictions do not read `realized_future`.
+Go's frozen dependency graph has a known read-only `yaml.v2` module metadata issue in some environments. Historical testing used an **external diagnostic modfile** rather than silently editing `go.mod`/`go.sum`. A clean-checkout green build is not claimed here. Running `python tests/test_poc.py` may overwrite bounded historical evidence files.
 
-| Fixture | Acceptance claim |
-|---|---|
-| F01 | Same Shape, two families: PGFP N1 (marginals -1,0); tied best-fit N0 |
-| F02 | Initial F=4; placement on N0 gives F=1, on N1 F=3; PGFP N1 |
-| F03 | Same predicted replay as F01; actual B-only future value PGFP=0, best-fit=1 |
-| F04 | Both (mu,lambda_GPU)=(1,0),(0,1) certify max x with task/GPU bounds x<=1; proves dual nonuniqueness only |
-| F05 | Six unsupported scenarios fail explicitly, with no physical-valid advice |
+## Research findings
 
-F04 analytical vectors are independently certified on the exact canonical model,
-but are labeled analytical test witnesses, not claimed native solver outputs.
-Separate alternative-candidate replay tests use manual fixed prices explicitly
-labeled **not certified**; arbitrary prices never enter the public advisor API.
+| Study | Recorded result | Evidence |
+| --- | --- | --- |
+| **Native heterogeneous GPU placement (M6)** | 31 controlled scenes / 94 held-out future jobs: Native OFF **89**, PGFP **85**, PGFP+LP **86** admitted | [M6 PR #34](https://github.com/JohnnyZPiggy/AccelSched-KAI/pull/34) |
+| **PGFP failure analysis (M7)** | Larger advice weights did not improve admission on the tested scenes; negative and neutral cases retained | [M7 PR #36](https://github.com/JohnnyZPiggy/AccelSched-KAI/pull/36) |
+| **LP price information (M7)** | Single-target LP: **0/140** nonzero-price cases; declared planning cohort: **50/140**; **no observed admission gain** | [M7 Issue #35](https://github.com/JohnnyZPiggy/AccelSched-KAI/issues/35) |
+| **Producer latency (M7)** | Engineer-reported cold **0.52–0.56 s/request** vs warmed experimental worker **24–26 ms/request** | [M7 PR #36](https://github.com/JohnnyZPiggy/AccelSched-KAI/pull/36) |
 
-Statuses: `INVALID_INPUT`, `UNSUPPORTED_CONSTRAINT`, `LP_UNCERTIFIED`,
-`SOLVER_TIMEOUT`, `REPLAY_MISMATCH`, `PHYSICAL_INVALID`, `PHYSICAL_VALID`,
-`INTERNAL_ERROR`. Lawful rejection, even rejection of all jobs, can be physically
-valid. Every policy is independently audited before advice is exposed. Failure
-reports retain diagnostic traces, but never an `advice` field.
+The one beneficial PGFP case in M6 was an explicitly disclosed hand-designed mechanism scene; the 30 seeded scenes provided no beneficial PGFP case. The LP cohort probe is test-only, and certified prices alone did not change the final Native allocation outcome. These are **bounded simulated results**, not evidence of generalized admission or GPU acceleration gains. Engineer-run raw M4–M7 evidence lives in an uncommitted local workspace; only historical `evidence/` is bundled here.
 
-## Evidence and limits
+## Repository layout
 
-See [evidence manifest](evidence/manifest.json), [fixture numerical reports](evidence/fixture-runs.json),
-[two dual witnesses](evidence/dual-witnesses.json), [failure cases](evidence/failures.json),
-[Oracle fault detection](evidence/oracle-faults.json), [manual replay witnesses](evidence/manual-replay.json),
-[test collection](evidence/collection.txt), [test results](evidence/pytest.txt),
-and [installation/environment receipt](evidence/acceptance.json).
-Manifest records exact dependency versions, fixture/output file SHA-256 and
-status denominators, separating native fixture runs from injected failures.
-Each successful output includes normalized input SHA-256 and an output SHA-256
-over the whole report **excluding that hash field**. Timings are diagnostic and
-make full output hashes vary between runs; decision traces are compared directly.
-Raw fixture file hashes and canonical JSON hashes are deliberately distinguished.
+```text
+src/accelsched_kai/   Optimization adapter, certified artifacts,
+                      trusted producers, audits, latency experiment
+poc1/                 Early KAI interface probes
+poc1b/                Pinned native KAI Fake Session experiments
+tests/                Python regression and fault tests
+fixtures/             Bounded example snapshots
+evidence/             Early offline acceptance records
+```
 
-No GPU, Colab, Kubernetes, Docker, paid service, upstream edit, CI workflow,
-large benchmark or performance certification is included. Validation is on one
-Windows/Python/NumPy/SciPy environment; the fresh task venv shares preinstalled
-numerical dependencies. This is not a Python-version or native KAI compatibility
-matrix. Installation requires the frozen source; wrong/missing versions fail closed.
+## Scope and limitations
 
-Engineer delivers a Draft PR for SAE Chief Architect independent T2; no self-merge.
+- **Not production-ready:** no live Kubernetes deployment, real GPU execution, official KAI plugin or service-level performance guarantee.
+- **Narrow trusted domain:** integer whole GPUs, CPU cores and RAM GiB in controlled Fake Sessions; fractional/shared GPUs, MIG, DRA, NUMA/topology and releasing/preemption are not supported.
+- **No proven policy superiority:** M6/M7 preserve negative results; original KAI policies remain the comparison baseline.
+- **No GPU solver speedup claim:** this repository does not benchmark PyTorch, cuPDLP or GPU-resident scheduling.
+- **Pinned interfaces:** frozen AccelSched/KAI SHAs, private research APIs and original LP certificates are part of the experimental reproducibility boundary.
+- **Partial raw archive:** later Mac-local raw logs and race-detector evidence are not part of the committed repository.
+
+## Related projects
+
+- [AccelSched](https://github.com/JohnnyZPiggy/AccelSched) — heterogeneous placement and optimization engine.
+- [KAI Scheduler](https://github.com/kai-scheduler/KAI-scheduler) — upstream scheduler, independently maintained.
+- [SAE Framework](https://github.com/JohnnyZPiggy/SAE-Framework) — Scientist–Architect–Engineer research workflow.
+
+## License
+
+[MIT License](LICENSE). This independent project is not affiliated with or endorsed by NVIDIA/KAI.
