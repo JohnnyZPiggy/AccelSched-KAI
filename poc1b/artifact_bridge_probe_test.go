@@ -311,6 +311,10 @@ func TestTrustedArtifactBridgeNative(t *testing.T) {
 		t.Fatal("registry")
 	}
 	first := map[string][]byte{}
+	var offScore *probeScoringReceipt
+	var offAction *probeActionReceipt
+	var oldRecords []*adviceRecord
+	var oldAudits []nodeProbeAudit
 	for repeat := 0; repeat < 3; repeat++ {
 		for _, arm := range []string{"off", "zero", "nonzero", "stale"} {
 			t.Run(fmt.Sprintf("%d_%s", repeat, arm), func(t *testing.T) {
@@ -374,6 +378,15 @@ func TestTrustedArtifactBridgeNative(t *testing.T) {
 					}
 				}
 				action := bridgeAction(t, f, mock, order[0])
+				if arm == "off" && offScore == nil {
+					offScore = &scores
+					offAction = &action
+				}
+				if arm == "zero" || arm == "stale" {
+					if !reflect.DeepEqual(*offScore, scores) || !reflect.DeepEqual(*offAction, action) {
+						t.Fatal("OFF/neutral/stale native differential")
+					}
+				}
 				var act nodeProbeAudit
 				if p.record != nil {
 					act = p.record.audit()
@@ -401,6 +414,18 @@ func TestTrustedArtifactBridgeNative(t *testing.T) {
 						t.Fatal("active post-close writes/drop")
 					}
 					nativeSave(t, d, "sealed.json", seal)
+					for _, r := range oldRecords {
+						if r == p.record {
+							t.Fatal("shared bridge record")
+						}
+					}
+					oldRecords = append(oldRecords, p.record)
+					oldAudits = append(oldAudits, seal)
+				}
+				for i, r := range oldRecords {
+					if !reflect.DeepEqual(r.audit(), oldAudits[i]) {
+						t.Fatal("cross-Session sealed contamination")
+					}
 				}
 			})
 		}
@@ -438,6 +463,10 @@ func TestBridgeStateEvolution(t *testing.T) {
 	base := bridgeScores(t, f)
 	if p.inactive.Load() == 0 {
 		t.Fatal("no active stale scoring")
+	}
+	currentProjection, err := bridgeProjection(t, f)
+	if err != nil || bridgeHash(currentProjection) == g.projectionHash {
+		t.Fatal("state evolution not actually measured", err)
 	}
 	raw2, g2 := bridgeProduce(t, f, 2, filepath.Join(dir, "fresh"))
 	if !p.begin(raw2, g2, 40) {
@@ -559,6 +588,41 @@ func TestBridgeFaultsAndTrust(t *testing.T) {
 		t.Fatal("predicate semantics")
 	}
 	f.task.Pod.Spec.NodeSelector = nil
+	priority := f.job.Priority
+	f.job.Priority = 1
+	if p.begin(raw, copyGrant(), 40) {
+		t.Fatal("job state changed")
+	}
+	f.job.Priority = priority
+	n.PodInfos[f.task.UID] = f.task
+	if p.begin(raw, copyGrant(), 40) {
+		t.Fatal("pod membership")
+	}
+	delete(n.PodInfos, f.task.UID)
+	n.NumaTopology = &node_info.NumaTopology{}
+	if p.begin(raw, copyGrant(), 40) {
+		t.Fatal("NUMA")
+	}
+	n.NumaTopology = nil
+	oldLabel := n.Node.Labels[commonconstants.GpuCountLabel]
+	n.Node.Labels[commonconstants.GpuCountLabel] = "1"
+	if p.begin(raw, copyGrant(), 40) {
+		t.Fatal("family labels")
+	}
+	n.Node.Labels[commonconstants.GpuCountLabel] = oldLabel
+	for _, set := range f.job.PodSets {
+		set.SetMinAvailable(2)
+		if p.begin(raw, copyGrant(), 40) {
+			t.Fatal("Gang")
+		}
+		set.SetMinAvailable(1)
+	}
+	originalPredicates := f.session.PredicateFns
+	f.session.PredicateFns = append(append(originalPredicates[:0:0], originalPredicates...), originalPredicates[0])
+	if p.begin(raw, copyGrant(), 40) {
+		t.Fatal("predicate hook mutation")
+	}
+	f.session.PredicateFns = originalPredicates
 	other, _, _ := actionFixture(t, "B")
 	other.session.ID = f.session.ID
 	q := newArtifactBridge(nil).(*artifactBridgeProbe)
