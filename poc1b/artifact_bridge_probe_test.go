@@ -111,6 +111,9 @@ func bridgeProjection(t *testing.T, f nativeFixture) ([]byte, error) {
 		b, _ := json.Marshal(p.Pod.Spec)
 		_ = json.Unmarshal(b, &spec)
 		for key := range spec {
+			if key == "affinity" && p.Pod.Spec.Affinity != nil && reflect.DeepEqual(*p.Pod.Spec.Affinity, v1.Affinity{}) {
+				continue
+			}
 			if key != "containers" && key != "nodeName" && key != "schedulerName" {
 				return nil, fmt.Errorf("unrepresented PodSpec %s", key)
 			}
@@ -476,6 +479,11 @@ func TestBridgeFaultsAndTrust(t *testing.T) {
 		b, _ := json.Marshal(a)
 		if p.begin(b, copyGrant(), 40) {
 			t.Fatal("rehashed untrusted bytes accepted", i)
+		}
+		g := copyGrant()
+		g.envelopeHash = bridgeHash(b)
+		if _, err := decodeBridge(b, g); err == nil {
+			t.Fatal("strict decoder accepted privileged fault", i)
 		}
 	}
 	// Trusted decoder defense is tested separately; replacing the digest below is
