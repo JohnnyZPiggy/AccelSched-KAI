@@ -124,12 +124,19 @@ func bridgeProjection(t *testing.T, f nativeFixture) ([]byte, error) {
 		req := p.Pod.Spec.Containers[0].Resources.Requests
 		for k := range req {
 			q := req[k]
+			if k == v1.ResourcePods && q.Value() == 1 && q.MilliValue() == 1000 {
+				continue
+			}
 			if k == resource_info.GPUResourceName && q.IsZero() {
 				continue
 			}
 			if k != v1.ResourceCPU && k != v1.ResourceMemory {
-				return nil, fmt.Errorf("extra resource")
+				return nil, fmt.Errorf("extra resource %s=%s (all %v)", k, q.String(), req)
 			}
+		}
+		expectedContainer := v1.Container{Name: "main", Resources: v1.ResourceRequirements{Requests: req}}
+		if !reflect.DeepEqual(p.Pod.Spec.Containers[0], expectedContainer) || p.Pod.Spec.SchedulerName != "kai-scheduler" {
+			return nil, fmt.Errorf("unsupported container/predicate semantics")
 		}
 		if float64(req.Cpu().MilliValue()) != p.ResReqVector.Get(resource_info.CPUIndex) || float64(req.Memory().Value()) != p.ResReqVector.Get(resource_info.MemoryIndex) {
 			return nil, fmt.Errorf("native request/Pod unit mismatch")
