@@ -95,6 +95,19 @@ func bridgeUnique(d *json.Decoder) error {
 	}
 	return err
 }
+func bridgeStringFields(raw []byte, names []string, exact int) error {
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(raw, &fields) != nil || len(fields) != exact {
+		return fmt.Errorf("missing/extra fields")
+	}
+	for _, name := range names {
+		value := fields[name]
+		if len(value) == 0 || value[0] != '"' {
+			return fmt.Errorf("exact string field required: %s", name)
+		}
+	}
+	return nil
+}
 func decodeBridge(raw []byte, grant *bridgeGrant) (bridgeEnvelope, error) {
 	var v bridgeEnvelope
 	if grant == nil || len(raw) == 0 || len(raw) > 65536 || !bytes.Equal(bytes.TrimSpace(raw), raw) || bridgeHash(raw) != grant.envelopeHash {
@@ -112,6 +125,22 @@ func decodeBridge(raw []byte, grant *bridgeGrant) (bridgeEnvelope, error) {
 	d.DisallowUnknownFields()
 	if err := d.Decode(&v); err != nil {
 		return v, err
+	}
+	if err := bridgeStringFields(raw, []string{"version", "producer", "producer_sha256", "artifact_sha256", "artifact_b64", "prediction_sha256", "projection_sha256", "session", "task_uid"}, 12); err != nil {
+		return v, err
+	}
+	var object map[string]json.RawMessage
+	_ = json.Unmarshal(raw, &object)
+	for key, names := range map[string][]string{"nodes": {"name", "uid"}, "pairs": {"task_uid", "node", "score_bits"}} {
+		var children []json.RawMessage
+		if json.Unmarshal(object[key], &children) != nil {
+			return v, fmt.Errorf("array required")
+		}
+		for _, child := range children {
+			if err := bridgeStringFields(child, names, len(names)); err != nil {
+				return v, err
+			}
+		}
 	}
 	if v.Version != "M3B-1" || v.Producer != "SAE_CONTROLLED_OFFLINE_TEST_HARNESS" || v.ProducerHash != grant.producerHash || v.Projection != grant.projectionHash || v.Phase != grant.phase || v.Session != grant.owner.ID || v.Task != string(grant.task.UID) {
 		return v, fmt.Errorf("provenance/version/phase mismatch")

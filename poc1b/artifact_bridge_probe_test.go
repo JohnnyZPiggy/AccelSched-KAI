@@ -511,6 +511,8 @@ func TestBridgeFaultsAndTrust(t *testing.T) {
 		func(a map[string]any) { a["pairs"].([]any)[0].(map[string]any)["score_bits"] = "4000000000000000" },
 		func(a map[string]any) { a["nodes"].([]any)[0].(map[string]any)["name"] = "node1" },
 		func(a map[string]any) { a["unknown"] = true },
+		func(a map[string]any) { a["nodes"].([]any)[0].(map[string]any)["uid"] = nil },
+		func(a map[string]any) { delete(a["nodes"].([]any)[0].(map[string]any), "uid") },
 	}
 	for i, mutate := range mutations {
 		var a map[string]any
