@@ -123,6 +123,10 @@ func bridgeProjection(t *testing.T, f nativeFixture) ([]byte, error) {
 		}
 		req := p.Pod.Spec.Containers[0].Resources.Requests
 		for k := range req {
+			q := req[k]
+			if k == resource_info.GPUResourceName && q.IsZero() {
+				continue
+			}
 			if k != v1.ResourceCPU && k != v1.ResourceMemory {
 				return nil, fmt.Errorf("extra resource")
 			}

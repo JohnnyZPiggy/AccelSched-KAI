@@ -160,6 +160,8 @@ type artifactBridgeProbe struct {
 	target              *pod_info.PodInfo
 	nodes               map[string]*node_info.NodeInfo
 	inactive            atomic.Uint64
+	lastPhase           int
+	phaseRecords        []*adviceRecord
 }
 
 var _ framework.Plugin = (*artifactBridgeProbe)(nil)
@@ -198,7 +200,7 @@ func (p *artifactBridgeProbe) begin(raw []byte, g *bridgeGrant, lambda float64) 
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.phaseActive = false
-	if p.closed || g == nil || g.used || g.owner != p.owner || g.project == nil || !finiteAdvice(lambda) || lambda < 0 || lambda > adviceLambdaLimit {
+	if p.closed || g == nil || g.used || g.owner != p.owner || g.project == nil || g.phase <= p.lastPhase || g.phase > 3 || !finiteAdvice(lambda) || lambda < 0 || lambda > adviceLambdaLimit {
 		return false
 	}
 	g.used = true
@@ -245,9 +247,20 @@ func (p *artifactBridgeProbe) begin(raw []byte, g *bridgeGrant, lambda float64) 
 		p.nodes[name] = n
 	}
 	p.phaseActive = p.record.active
+	if p.phaseActive {
+		p.lastPhase = g.phase
+		p.phaseRecords = append(p.phaseRecords, p.record)
+	}
 	return p.phaseActive
 }
-func (p *artifactBridgeProbe) endPhase() { p.mu.Lock(); defer p.mu.Unlock(); p.phaseActive = false }
+func (p *artifactBridgeProbe) endPhase() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.phaseActive = false
+	if p.record != nil {
+		p.record.metadata.close()
+	}
+}
 func (p *artifactBridgeProbe) OnSessionClose(s *framework.Session) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
